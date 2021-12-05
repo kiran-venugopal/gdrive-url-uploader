@@ -17,7 +17,8 @@ function ProgressViewer({ fileId, setFileId = () => {} }) {
           return;
         }
         setPercent(data.progress);
-        if (data.progress === 100) window.localStorage.removeItem("uploadData");
+        if (data.progress === 100 || data.progress === null)
+          window.localStorage.removeItem("uploadData");
       });
     }, 2000);
 
