@@ -35,6 +35,7 @@ body,
 
 .initial-message p {
   color: var(--secondary-text);
+  padding: 0 10px;
 }
 
 .primary-btn {
