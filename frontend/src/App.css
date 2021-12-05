@@ -1,0 +1,181 @@
+* {
+  --text-color: #d2d1da;
+  --secondary-text: #61606a;
+  --primary: #154575;
+  --border-color: #555579;
+  --success-background: #0c5b4d;
+  --field-background: #21212f;
+  --field-border: #2b2937;
+}
+
+@import url("https://fonts.googleapis.com/css2?family=Rubik:wght@500&display=swap");
+
+.App {
+  text-align: center;
+  background-color: #1b1925;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Rubik", sans-serif;
+  flex-direction: column;
+}
+
+.App,
+html,
+body,
+#root {
+  height: 100%;
+}
+
+.initial-message {
+  color: var(--text-color);
+  font-size: 12px;
+  margin-top: 30px;
+}
+
+.initial-message p {
+  color: var(--secondary-text);
+}
+
+.primary-btn {
+  padding: 15px 20px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  background: var(--primary);
+  color: var(--text-color);
+  border: none;
+  box-shadow: 0px -3px 11px 4px #00000078;
+  border-radius: 5px;
+  transition: box-shadow 200ms, transform 200ms;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: auto;
+}
+.primary-btn svg {
+  margin-right: 10px;
+}
+.primary-btn:active {
+  box-shadow: none;
+  transform: translateY(2px);
+}
+
+.primary-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.input-field {
+  margin-bottom: 30px;
+  width: 90%;
+  box-sizing: border-box;
+  max-width: 500px;
+  color: var(--text-color);
+  text-align: left;
+  font-size: 14px;
+}
+
+.input-field input {
+  background: var(--field-background);
+  border-radius: 5px;
+  padding: 12px;
+  display: block;
+  width: 100%;
+  border: none;
+  box-sizing: border-box;
+  color: var(--text-color);
+  font-size: 16px;
+  border: 1px solid #2b2937;
+}
+
+.input-field input:focus {
+  outline: 2px solid var(--border-color);
+}
+.input-field label {
+  margin: 5px;
+  display: block;
+}
+
+small {
+  font-weight: 200;
+}
+
+.primary-btn.success {
+  background: var(--success-background);
+}
+
+.account-info {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  color: #61606a;
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+}
+
+.user-chip {
+  display: flex;
+  align-items: center;
+  background: var(--field-border);
+  padding: 5px 10px;
+  border-radius: 10px;
+  margin-left: 10px;
+  color: var(--text-color);
+  cursor: pointer;
+  position: relative;
+}
+
+.user-chip img {
+  width: 30px;
+  border-radius: 50%;
+  height: 30px;
+  margin-right: 10px;
+}
+
+.dropdown {
+  position: absolute;
+  background: #2b2937;
+  width: 100%;
+  left: 0;
+  top: 0;
+  padding: 15px 0;
+  margin-top: 41px;
+  color: #c2c1cb;
+  border-radius: 5px;
+  box-shadow: 0px 5px 17px 2px #00000059;
+  transition: all 300ms;
+}
+
+/* progress viewer */
+
+svg.CircularProgressbar {
+  width: 70%;
+  max-width: 250px;
+}
+
+.progress-view {
+  width: 100%;
+  color: var(--text-color);
+}
+
+span.filename {
+  font-style: italic;
+  color: #2d79c5;
+  margin: 0 6px;
+}
+
+.progress-label.success {
+  color: #5eba62;
+}
+.progress-label {
+  margin: 30px 0;
+  color: #24bfc3;
+  padding: 0 10px;
+  word-break: break-word;
+}
+
+.progress-label .primary-btn {
+  margin-top: 40px;
+}
