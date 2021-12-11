@@ -15,7 +15,7 @@ async function uploadToGDrive(req, res) {
     await drive.files.list();
 
     const fileId = getRandomId();
-    fileMeta[fileId] = {};
+    fileMeta[fileId] = { progress: 0 };
 
     let length = 0;
     const paths = url.split("/");
