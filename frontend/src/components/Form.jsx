@@ -2,6 +2,11 @@ import React, { Fragment } from "react";
 import { ReactComponent as DriveIcon } from "../icons/drive.svg";
 
 function FormFields({ isAuth, isBtnLoading, handleAuthClick }) {
+  const handleChange = (e) => {
+    const value = e.target.value;
+    window.localStorage.setItem("fileurl", value);
+  };
+
   return (
     <Fragment>
       <div className="input-field">
@@ -11,6 +16,7 @@ function FormFields({ isAuth, isBtnLoading, handleAuthClick }) {
           id="url"
           placeholder="eg: https://example.com/my-file.mp4"
           name="url"
+          onChange={handleChange}
         />
       </div>
       <div className="input-field">

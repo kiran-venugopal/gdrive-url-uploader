@@ -19,9 +19,13 @@ function App() {
     const tokens = JSON.parse(window.localStorage.getItem("tokens") || "null");
     const url = new URL(window.location.href);
 
-    const fileUrl = url.searchParams.get("url");
-
+    let fileUrl = url.searchParams.get("url");
     const urlInput = document.getElementById("url");
+    if (fileUrl) {
+      window.localStorage.setItem("fileurl", fileUrl);
+    } else {
+      fileUrl = window.localStorage.getItem("fileurl");
+    }
     if (fileUrl && urlInput) urlInput.value = fileUrl;
 
     if (tokens && new Date(tokens.expiry_date) > new Date()) {
@@ -56,6 +60,7 @@ function App() {
     if (data.success) {
       window.location.href = data.authUrl;
     }
+    setBtnLoading(false);
   }
 
   async function handleSubmit(e) {
@@ -83,7 +88,11 @@ function App() {
         })
       );
       setFileId(data.fileId);
+      window.localStorage.removeItem("fileurl");
+    } else if (data.message) {
+      alert(data.message);
     }
+    setBtnLoading(false);
   }
 
   function handleLogout() {

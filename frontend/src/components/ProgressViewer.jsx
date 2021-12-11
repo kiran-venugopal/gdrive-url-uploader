@@ -36,8 +36,8 @@ function ProgressViewer({ fileId, setFileId = () => {} }) {
     <div className="progress-view">
       <CircularProgressbar
         styles={buildStyles({
-          pathColor: "#26629e",
-          textColor: "#26629e",
+          pathColor: "#3587d9",
+          textColor: "#3587d9",
           trailColor: "#23212f",
         })}
         value={percent}
