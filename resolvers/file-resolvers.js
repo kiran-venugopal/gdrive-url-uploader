@@ -41,8 +41,6 @@ async function uploadToGDrive(req, res) {
         length += chunk.length;
         let percentCompleted = Math.floor((length / total_length) * 100);
 
-        console.log("completed: ", percentCompleted);
-
         fileMeta[fileId].progress = percentCompleted;
         if (percentCompleted === 100) {
           // remove from global state after 30 minutes
@@ -67,7 +65,7 @@ async function uploadToGDrive(req, res) {
         body: response.data,
       },
     });
-    
+
 
     return res.json({ success: true, url, fileId });
   } catch (err) {
