@@ -29,6 +29,7 @@ async function getToken(req, res) {
             resolve(token);
             return;
           }
+          console.log("user authenticated:", res.data)
           resolve({ tokens: token, user: res.data });
         });
       });
@@ -39,7 +40,7 @@ async function getToken(req, res) {
 
     return res.json({ success: true, ...oauth_data });
   } catch (err) {
-    console.log(err);
+    console.log("getToken error:", err);
     return res.json({ success: false, message: err.message });
   }
 }
@@ -53,7 +54,7 @@ async function authorize(req, res) {
 
     return res.json({ success: true, authUrl });
   } catch (err) {
-    console.log(err);
+    console.log("authorize error:", err);
     return res.json({
       success: false,
       message: err.message,

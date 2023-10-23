@@ -7,6 +7,7 @@ async function uploadToGDrive(req, res) {
   const { tokens, url, filename } = req.body;
 
   try {
+   
     oauthClient.setCredentials(tokens);
     const drive = google.drive({
       version: "v3",
@@ -23,12 +24,15 @@ async function uploadToGDrive(req, res) {
     const filenameSplitted = paths[paths.length - 1].split(".");
     const ext = filenameSplitted[filenameSplitted.length - 1];
 
-    const splitted_filename = new URL(url).pathname.split("/");
+    const pathname = new URL(url).pathname
+    const splitted_filename =pathname.split("/");
     const filename_from_url = splitted_filename[splitted_filename.length - 1];
 
+    
     const response = await axios.get(url, {
       responseType: "stream",
     });
+    console.log(`started dowload of file: ${pathname}`)
 
     const total_length = parseInt(response.headers["content-length"]);
 
@@ -45,8 +49,10 @@ async function uploadToGDrive(req, res) {
           setTimeout(() => {
             delete fileMeta[fileId];
           }, 30 * 60 * 1000);
+          console.log(`completed upload of file: ${pathname}`)
         }
       } catch (err) {
+        console.log(`error while downloading of file: ${pathname}`)
         console.log(err);
       }
     });
@@ -61,10 +67,11 @@ async function uploadToGDrive(req, res) {
         body: response.data,
       },
     });
+    
 
     return res.json({ success: true, url, fileId });
   } catch (err) {
-    console.log(err);
+    console.log("uploadToGDrive: error ", err);
     return res.json({ success: false, message: err.message });
   }
 }
