@@ -20,7 +20,7 @@ function ProgressViewer({ fileId, setFileId = () => {} }) {
         if (data.progress === 100 || data.progress === null)
           window.localStorage.removeItem("uploadData");
       });
-    }, 2000);
+    }, 5000);
 
     const uploadData = JSON.parse(
       window.localStorage.getItem("uploadData") || "null"
