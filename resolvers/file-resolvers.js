@@ -2,12 +2,13 @@ const { default: axios } = require("axios");
 const { google } = require("googleapis");
 const { oauthClient } = require("../gdrive-api/config");
 const { getRandomId } = require("../utils");
+const { fileClients } = require("./socket");
+const webPush = require("web-push");
 
 async function uploadToGDrive(req, res) {
   const { tokens, url, filename } = req.body;
 
   try {
-   
     oauthClient.setCredentials(tokens);
     const drive = google.drive({
       version: "v3",
@@ -24,15 +25,14 @@ async function uploadToGDrive(req, res) {
     const filenameSplitted = paths[paths.length - 1].split(".");
     const ext = filenameSplitted[filenameSplitted.length - 1];
 
-    const pathname = new URL(url).pathname
-    const splitted_filename =pathname.split("/");
+    const pathname = new URL(url).pathname;
+    const splitted_filename = pathname.split("/");
     const filename_from_url = splitted_filename[splitted_filename.length - 1];
 
-    
     const response = await axios.get(url, {
       responseType: "stream",
     });
-    console.log(`started dowload of file: ${pathname}`)
+    console.log(`started dowload of file: ${pathname}`);
 
     const total_length = parseInt(response.headers["content-length"]);
 
@@ -42,15 +42,52 @@ async function uploadToGDrive(req, res) {
         let percentCompleted = Math.floor((length / total_length) * 100);
 
         fileMeta[fileId].progress = percentCompleted;
+
+        fileClients.get(fileId)?.forEach?.((client) => {
+          if (client.readyState === 1) {
+            // OPEN
+            client.send(
+              JSON.stringify({
+                fileId: fileId,
+                timestamp: Date.now(),
+                progress: percentCompleted,
+              })
+            );
+          }
+        });
+
         if (percentCompleted === 100) {
           // remove from global state after 30 minutes
           setTimeout(() => {
             delete fileMeta[fileId];
           }, 30 * 60 * 1000);
-          console.log(`completed upload of file: ${pathname}`)
+          console.log(`completed upload of file: ${pathname}`);
+
+          fileClients.get(fileId)?.forEach?.((client) => client.terminate());
+
+          const payload = JSON.stringify({
+            title: "File uploaded successfully!",
+            body: `${
+              filename || filename_from_url
+            } is uploaded successfully to google drive.`,
+            icon: "/favicon.svg",
+            url: "/",
+          });
+
+          console.log("sending notification", global.notificationSubs);
+          global.notificationSubs.map((sub) =>
+            webPush.sendNotification(sub, payload).catch((err) => {
+              // Remove invalid subscriptions
+              if (err.statusCode === 410) {
+                const index = subscriptions.indexOf(sub);
+                if (index > -1) subscriptions.splice(index, 1);
+              }
+              throw err;
+            })
+          );
         }
       } catch (err) {
-        console.log(`error while downloading of file: ${pathname}`)
+        console.log(`error while downloading of file: ${pathname}`);
         console.log(err);
       }
     });
@@ -65,7 +102,6 @@ async function uploadToGDrive(req, res) {
         body: response.data,
       },
     });
-
 
     return res.json({ success: true, url, fileId });
   } catch (err) {

@@ -4,6 +4,7 @@ import { upload } from "./api/file";
 import "./App.css";
 import FormFields from "./components/Form";
 import ProgressViewer from "./components/ProgressViewer";
+import usePushNotification from "./hooks/usePushNotification";
 
 function App() {
   const [isBtnLoading, setBtnLoading] = useState(false);
@@ -14,6 +15,7 @@ function App() {
     window.localStorage.getItem("uploadData") || "{}"
   );
   const [fileId, setFileId] = useState(uploadData.fileId);
+  usePushNotification();
 
   useEffect(() => {
     const tokens = JSON.parse(window.localStorage.getItem("tokens") || "null");

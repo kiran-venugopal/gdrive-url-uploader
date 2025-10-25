@@ -1,36 +1,57 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
-import { getProgress } from "../api/file";
 
 function ProgressViewer({ fileId, setFileId = () => {} }) {
   const [percent, setPercent] = useState(0);
-  const [id, setId] = useState(fileId);
-  const [name, setName] = useState("MyFileNew.mp4");
+  const [name, setName] = useState("Untitled file");
 
   useEffect(() => {
-    const intervalId = setInterval(() => {
-      getProgress(id).then((data) => {
-        if (!data.success) {
-          setFileId(null);
-          window.localStorage.removeItem("uploadData");
-          return;
-        }
+    const connect = () => {
+      const timer = setTimeout(() => {
+        setFileId(null);
+        window.localStorage.removeItem("uploadData");
+      }, 1000 * 5);
+
+      const uploadData = JSON.parse(
+        window.localStorage.getItem("uploadData") || "null"
+      );
+
+      // setFileId(uploadData?.fileId);
+      setName(uploadData?.filename);
+
+      // if (!uploadData || fileId) return () => clearInterval(intervalId);
+
+      let socket = new WebSocket(
+        `${window.location.protocol === "http:" ? "ws" : "wss"}://${
+          window.location.host
+        }/websocket`
+      );
+      socket.onopen = () => {
+        console.log("socket connected.");
+
+        socket.send(
+          JSON.stringify({
+            fileId,
+            type: "GET_PROGRESS",
+          })
+        );
+      };
+
+      socket.onmessage = (event) => {
+        clearTimeout(timer);
+        const data = JSON.parse(event.data);
         setPercent(data.progress);
-        if (data.progress === 100 || data.progress === null)
-          window.localStorage.removeItem("uploadData");
-      });
-    }, 5000);
+      };
 
-    const uploadData = JSON.parse(
-      window.localStorage.getItem("uploadData") || "null"
-    );
+      socket.onerror = (error) => {
+        console.error("socket error!", error);
+        connect();
+      };
+    };
 
-    setFileId(uploadData?.fileId);
-    setName(uploadData?.filename);
-
-    if (!uploadData || fileId) return () => clearInterval(intervalId);
-  }, [id]);
+    connect();
+  }, [fileId, setFileId]);
 
   return (
     <div className="progress-view">
