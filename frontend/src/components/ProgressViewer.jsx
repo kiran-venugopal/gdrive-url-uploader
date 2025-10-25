@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
 import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
+import urlBase64ToUint8Array from "../utils/urlBase64ToUint8Array";
+import { getPublicKey } from "../notification";
 
 function ProgressViewer({ fileId, setFileId = () => {} }) {
   const [percent, setPercent] = useState(0);
   const [name, setName] = useState("Untitled file");
 
   useEffect(() => {
-    const connect = () => {
+    const connect = async () => {
       const timer = setTimeout(() => {
         setFileId(null);
         window.localStorage.removeItem("uploadData");
@@ -48,6 +50,24 @@ function ProgressViewer({ fileId, setFileId = () => {} }) {
         console.error("socket error!", error);
         connect();
       };
+
+      // Get service worker registration
+      const registration = await navigator.serviceWorker.ready;
+
+      // Subscribe to push notifications
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(getPublicKey()),
+      });
+
+      // Send subscription to server
+      await fetch("/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subscription, fileId }),
+      });
+
+      console.log("Subscribed to push notifications");
     };
 
     connect();

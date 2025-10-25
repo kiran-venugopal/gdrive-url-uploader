@@ -74,17 +74,18 @@ async function uploadToGDrive(req, res) {
             url: "/",
           });
 
-          console.log("sending notification", global.notificationSubs);
-          global.notificationSubs.map((sub) =>
-            webPush.sendNotification(sub, payload).catch((err) => {
-              // Remove invalid subscriptions
-              if (err.statusCode === 410) {
-                const index = subscriptions.indexOf(sub);
-                if (index > -1) subscriptions.splice(index, 1);
-              }
-              throw err;
-            })
-          );
+          const fileSubscriber = global.notificationSubs.get(fileId);
+
+          console.log("sending notification", { fileId, fileSubscriber });
+
+          webPush.sendNotification(fileSubscriber, payload).catch((err) => {
+            // Remove invalid subscriptions
+            if (err.statusCode === 410) {
+              const index = subscriptions.indexOf(sub);
+              if (index > -1) subscriptions.splice(index, 1);
+            }
+            throw err;
+          });
         }
       } catch (err) {
         console.log(`error while downloading of file: ${pathname}`);

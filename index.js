@@ -8,7 +8,7 @@ const webPush = require("web-push");
 
 // global variable
 global.fileMeta = {};
-global.notificationSubs = [];
+global.notificationSubs = new Map();
 
 const app = express();
 const server = setupWebSocket(app);
@@ -46,11 +46,11 @@ app.get("/vapid-public-key", (req, res) => {
 
 // Endpoint to save subscription
 app.post("/subscribe", (req, res) => {
-  const subscription = req.body;
+  const { subscription, fileId } = req.body;
 
   // Save subscription (store in database in production)
-  global.notificationSubs.push(subscription);
+  global.notificationSubs.set(fileId, subscription);
 
-  console.log("New subscription:", subscription);
+  console.log("New subscription:", { fileId, subscription });
   res.status(201).json({ message: "Subscription saved" });
 });
