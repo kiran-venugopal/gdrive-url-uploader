@@ -5,7 +5,9 @@ import urlBase64ToUint8Array from "../utils/urlBase64ToUint8Array";
 import { getPublicKey } from "../notification";
 
 function ProgressViewer({ fileId, setFileId = () => {} }) {
-  const [percent, setPercent] = useState(0);
+  const [percent, setPercent] = useState(null);
+  const [uploadedMB, setUploadedMB] = useState(null);
+  const [isComplete, setIsComplete] = useState(false);
   const [name, setName] = useState("Untitled file");
 
   useEffect(() => {
@@ -43,7 +45,24 @@ function ProgressViewer({ fileId, setFileId = () => {} }) {
       socket.onmessage = (event) => {
         clearTimeout(timer);
         const data = JSON.parse(event.data);
-        setPercent(data.progress);
+
+        if (typeof data.progress === "number") {
+          setPercent(data.progress);
+          setUploadedMB(null);
+          if (data.progress >= 100 || data.complete) {
+            setIsComplete(true);
+          }
+        } else if (typeof data.uploadedMB === "number") {
+          setUploadedMB(data.uploadedMB);
+          setPercent(null);
+        }
+
+        if (data.complete) {
+          setIsComplete(true);
+          if (typeof data.uploadedMB === "number") {
+            setUploadedMB(data.uploadedMB);
+          }
+        }
       };
 
       socket.onerror = (error) => {
@@ -81,13 +100,22 @@ function ProgressViewer({ fileId, setFileId = () => {} }) {
           textColor: "#3587d9",
           trailColor: "#23212f",
         })}
-        value={percent}
-        text={`${percent}%`}
+        value={percent != null ? percent : isComplete ? 100 : 0}
+        text={
+          typeof percent === "number"
+            ? `${percent}%`
+            : uploadedMB != null
+            ? `${uploadedMB} MB`
+            : "0%"
+        }
       />
-      {percent !== 100 ? (
+      {!isComplete ? (
         <div className="progress-label">
           File <span className="filename"> {name} </span> is Uploading to google
           drive...
+          {uploadedMB != null && (
+            <div className="progress-subtext">{uploadedMB} MB uploaded</div>
+          )}
         </div>
       ) : (
         <div className="progress-label success">

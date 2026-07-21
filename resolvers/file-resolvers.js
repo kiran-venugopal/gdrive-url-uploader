@@ -17,7 +17,6 @@ async function uploadToGDrive(req, res) {
     await drive.files.list();
 
     const fileId = getRandomId();
-    fileMeta[fileId] = { progress: 0 };
 
     let length = 0;
     const pathname = new URL(url).pathname;
@@ -31,63 +30,102 @@ async function uploadToGDrive(req, res) {
     });
     console.log(`started dowload of file: ${url}`);
 
-    const total_length = parseInt(response.headers["content-length"]);
+    const total_length = parseInt(response.headers["content-length"], 10);
+    const hasTotalLength = Number.isFinite(total_length) && total_length > 0;
+
+    fileMeta[fileId] = {
+      progress: hasTotalLength ? 0 : null,
+      uploadedBytes: 0,
+      totalBytes: hasTotalLength ? total_length : null,
+      completed: false,
+    };
+
+    const sendProgressUpdate = (payload) => {
+      fileClients.get(fileId)?.forEach?.((client) => {
+        if (client.readyState === 1) {
+          client.send(JSON.stringify(payload));
+        }
+      });
+    };
+
+    const completeUpload = () => {
+      if (!fileMeta[fileId] || fileMeta[fileId].completed) return;
+
+      fileMeta[fileId] = {
+        ...fileMeta[fileId],
+        progress: 100,
+        uploadedBytes: length,
+        totalBytes: hasTotalLength ? total_length : null,
+        completed: true,
+      };
+
+      sendProgressUpdate({
+        fileId,
+        timestamp: Date.now(),
+        progress: 100,
+        uploadedBytes: length,
+        totalBytes: fileMeta[fileId].totalBytes,
+        uploadedMB: +(length / 1024 / 1024).toFixed(2),
+        complete: true,
+      });
+
+      setTimeout(() => {
+        delete fileMeta[fileId];
+      }, 30 * 60 * 1000);
+
+      console.log(`completed upload of file: ${pathname}`);
+      fileClients.get(fileId)?.forEach?.((client) => client.terminate());
+
+      const payload = JSON.stringify({
+        title: "File uploaded successfully!",
+        body: `${filename || filename_from_url} is uploaded successfully to google drive.`,
+        icon: "/favicon.svg",
+        url: "/",
+      });
+
+      const fileSubscriber = global.notificationSubs.get(fileId);
+
+      console.log("sending notification", { fileId, fileSubscriber });
+
+      webPush.sendNotification(fileSubscriber, payload).catch((err) => {
+        if (err.statusCode === 410) {
+          const index = subscriptions.indexOf(sub);
+          if (index > -1) subscriptions.splice(index, 1);
+        }
+        throw err;
+      });
+    };
 
     response.data.on("data", async (chunk) => {
       try {
         length += chunk.length;
-        let percentCompleted = Math.floor((length / total_length) * 100);
+        const percentCompleted = hasTotalLength
+          ? Math.floor((length / total_length) * 100)
+          : null;
 
         fileMeta[fileId].progress = percentCompleted;
+        fileMeta[fileId].uploadedBytes = length;
 
-        fileClients.get(fileId)?.forEach?.((client) => {
-          if (client.readyState === 1) {
-            // OPEN
-            client.send(
-              JSON.stringify({
-                fileId: fileId,
-                timestamp: Date.now(),
-                progress: percentCompleted,
-              })
-            );
-          }
+        sendProgressUpdate({
+          fileId,
+          timestamp: Date.now(),
+          progress: percentCompleted,
+          uploadedBytes: length,
+          totalBytes: fileMeta[fileId].totalBytes,
+          uploadedMB: +(length / 1024 / 1024).toFixed(2),
         });
 
-        if (percentCompleted === 100) {
-          // remove from global state after 30 minutes
-          setTimeout(() => {
-            delete fileMeta[fileId];
-          }, 30 * 60 * 1000);
-          console.log(`completed upload of file: ${pathname}`);
-
-          fileClients.get(fileId)?.forEach?.((client) => client.terminate());
-
-          const payload = JSON.stringify({
-            title: "File uploaded successfully!",
-            body: `${
-              filename || filename_from_url
-            } is uploaded successfully to google drive.`,
-            icon: "/favicon.svg",
-            url: "/",
-          });
-
-          const fileSubscriber = global.notificationSubs.get(fileId);
-
-          console.log("sending notification", { fileId, fileSubscriber });
-
-          webPush.sendNotification(fileSubscriber, payload).catch((err) => {
-            // Remove invalid subscriptions
-            if (err.statusCode === 410) {
-              const index = subscriptions.indexOf(sub);
-              if (index > -1) subscriptions.splice(index, 1);
-            }
-            throw err;
-          });
+        if (hasTotalLength && percentCompleted === 100) {
+          completeUpload();
         }
       } catch (err) {
         console.log(`error while downloading of file: ${pathname}`);
         console.log(err);
       }
+    });
+
+    response.data.on("end", () => {
+      completeUpload();
     });
 
     const contentType = response.headers["content-type"];
@@ -134,6 +172,12 @@ async function getProgress(req, res) {
     return res.json({
       success: true,
       progress: fileMeta[fileId].progress,
+      uploadedBytes: fileMeta[fileId].uploadedBytes || 0,
+      totalBytes: fileMeta[fileId].totalBytes || null,
+      uploadedMB: fileMeta[fileId].uploadedBytes
+        ? +(fileMeta[fileId].uploadedBytes / 1024 / 1024).toFixed(2)
+        : 0,
+      complete: fileMeta[fileId].completed || false,
     });
   }
   res.status(404);
