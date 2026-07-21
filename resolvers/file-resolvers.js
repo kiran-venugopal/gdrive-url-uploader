@@ -20,19 +20,16 @@ async function uploadToGDrive(req, res) {
     fileMeta[fileId] = { progress: 0 };
 
     let length = 0;
-    const paths = url.split("/");
-
-    const filenameSplitted = paths[paths.length - 1].split(".");
-    const ext = filenameSplitted[filenameSplitted.length - 1];
-
     const pathname = new URL(url).pathname;
-    const splitted_filename = pathname.split("/");
-    const filename_from_url = splitted_filename[splitted_filename.length - 1];
+    const filename_from_url = pathname.split("/").pop() || "file";
+    const urlExt = filename_from_url.includes(".")
+      ? filename_from_url.split('.').pop()
+      : null;
 
     const response = await axios.get(url, {
       responseType: "stream",
     });
-    console.log(`started dowload of file: ${pathname}`);
+    console.log(`started dowload of file: ${url}`);
 
     const total_length = parseInt(response.headers["content-length"]);
 
@@ -93,13 +90,25 @@ async function uploadToGDrive(req, res) {
       }
     });
 
+    const contentType = response.headers["content-type"];
+    const headerExt = contentType
+      ? contentType.split("/").pop().split(";")[0]
+      : null;
+    const finalExt = urlExt || headerExt || "bin";
+
+    const uploadName = filename
+      ? filename.includes('.')
+        ? filename
+        : `${filename}.${finalExt}`
+      : filename_from_url;
+
     drive.files.create({
       requestBody: {
-        name: filename ? `${filename}.${ext}` : filename_from_url,
-        mimeType: response.headers["content-type"],
+        name: uploadName,
+        mimeType: contentType,
       },
       media: {
-        mimeType: response.headers["content-type"],
+        mimeType: contentType,
         body: response.data,
       },
     });
